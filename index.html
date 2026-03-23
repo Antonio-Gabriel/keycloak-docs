@@ -1,0 +1,2795 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keycloak 25.0 — Guia de Integração</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0e1a;
+        --bg2: #0f1525;
+        --bg3: #151c30;
+        --border: #1e2d4a;
+        --border2: #243655;
+        --primary: #3b82f6;
+        --primary2: #60a5fa;
+        --accent: #06d6a0;
+        --accent2: #34d399;
+        --warn: #f59e0b;
+        --danger: #f87171;
+        --text: #e2e8f0;
+        --text2: #94a3b8;
+        --text3: #64748b;
+        --code-bg: #0d1117;
+        --code-border: #1e2d4a;
+        --sidebar-w: 280px;
+        --font-body: "Inter", sans-serif;
+        --font-head: "Syne", sans-serif;
+        --font-mono: "IBM Plex Mono", monospace;
+        --radius: 8px;
+        --glow: 0 0 40px rgba(59, 130, 246, 0.15);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 15px;
+        line-height: 1.7;
+        min-height: 100vh;
+      }
+
+      /* ─── SIDEBAR ────────────────────────────────────────────── */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: var(--sidebar-w);
+        height: 100vh;
+        background: var(--bg2);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .sidebar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .sidebar::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 2px;
+      }
+
+      .sidebar-logo {
+        padding: 28px 24px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .sidebar-logo .kc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #1e3a5f, #0f2540);
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        width: 100%;
+      }
+
+      .kc-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary), #1d4ed8);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 13px;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+      }
+
+      .kc-name {
+        font-family: var(--font-head);
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text);
+      }
+      .kc-version {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text3);
+        margin-top: 1px;
+      }
+
+      .sidebar-nav {
+        padding: 16px 0;
+        flex: 1;
+      }
+
+      .nav-section-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text3);
+        padding: 12px 24px 6px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 24px;
+        color: var(--text2);
+        text-decoration: none;
+        font-size: 13.5px;
+        font-weight: 400;
+        transition: all 0.15s;
+        border-left: 2px solid transparent;
+        position: relative;
+      }
+
+      .nav-item:hover {
+        color: var(--text);
+        background: rgba(59, 130, 246, 0.06);
+        border-left-color: var(--border2);
+      }
+
+      .nav-item.active {
+        color: var(--primary2);
+        background: rgba(59, 130, 246, 0.1);
+        border-left-color: var(--primary);
+      }
+
+      .nav-item .nav-num {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text3);
+        min-width: 20px;
+      }
+
+      .nav-item.sub {
+        padding-left: 44px;
+        font-size: 12.5px;
+      }
+
+      .nav-item.sub .nav-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--text3);
+        flex-shrink: 0;
+      }
+
+      .nav-item.sub:hover .nav-dot,
+      .nav-item.sub.active .nav-dot {
+        background: var(--primary);
+      }
+
+      /* ─── MAIN ───────────────────────────────────────────────── */
+      .main {
+        margin-left: var(--sidebar-w);
+        min-height: 100vh;
+      }
+
+      /* ─── HERO ───────────────────────────────────────────────── */
+      .hero {
+        background: linear-gradient(
+          135deg,
+          #0a0e1a 0%,
+          #0f1a2e 50%,
+          #0a1628 100%
+        );
+        border-bottom: 1px solid var(--border);
+        padding: 80px 64px 64px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(
+          circle,
+          rgba(59, 130, 246, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        bottom: -80px;
+        left: 20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(
+          circle,
+          rgba(6, 214, 160, 0.05) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--accent);
+        background: rgba(6, 214, 160, 0.1);
+        border: 1px solid rgba(6, 214, 160, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 24px;
+        letter-spacing: 0.05em;
+      }
+
+      .hero-eyebrow::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
+      }
+
+      .hero h1 {
+        font-family: var(--font-head);
+        font-size: 52px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, #fff 0%, var(--primary2) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero-sub {
+        font-size: 18px;
+        color: var(--text2);
+        font-weight: 300;
+        max-width: 560px;
+        line-height: 1.6;
+        margin-bottom: 36px;
+      }
+
+      .hero-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .tag {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .tag-blue {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--primary2);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+      }
+      .tag-green {
+        background: rgba(6, 214, 160, 0.12);
+        color: var(--accent);
+        border: 1px solid rgba(6, 214, 160, 0.2);
+      }
+      .tag-yellow {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--warn);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+      }
+
+      /* ─── CONTENT AREA ───────────────────────────────────────── */
+      .content {
+        padding: 0 64px 80px;
+        max-width: 960px;
+      }
+
+      /* ─── SECTION ────────────────────────────────────────────── */
+      .section {
+        padding-top: 64px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .section-num {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--primary);
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        padding: 4px 10px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+
+      .section h2 {
+        font-family: var(--font-head);
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .sub-section {
+        margin-top: 40px;
+      }
+
+      .sub-section h3 {
+        font-family: var(--font-head);
+        font-size: 19px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sub-section h3::before {
+        content: "";
+        display: inline-block;
+        width: 3px;
+        height: 18px;
+        background: var(--primary);
+        border-radius: 2px;
+      }
+
+      h4 {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text3);
+        margin-bottom: 10px;
+        margin-top: 20px;
+      }
+
+      p {
+        color: var(--text2);
+        margin-bottom: 14px;
+        line-height: 1.75;
+      }
+
+      /* ─── METHOD BADGE ───────────────────────────────────────── */
+      .endpoint-block {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 20px;
+        margin: 16px 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--font-mono);
+      }
+
+      .method {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        flex-shrink: 0;
+      }
+
+      .method-post {
+        background: rgba(6, 214, 160, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(6, 214, 160, 0.25);
+      }
+      .method-get {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--primary2);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+      }
+      .method-put {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+      }
+      .method-delete {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+        border: 1px solid rgba(248, 113, 113, 0.25);
+      }
+
+      .endpoint-path {
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+        word-break: break-all;
+      }
+
+      .endpoint-path .realm-var {
+        color: var(--text3);
+      }
+
+      /* ─── CODE BLOCK ─────────────────────────────────────────── */
+      .code-wrap {
+        position: relative;
+        margin: 14px 0 20px;
+        border-radius: var(--radius);
+        overflow: hidden;
+        border: 1px solid var(--code-border);
+      }
+
+      .code-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px;
+        background: #0d1117;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .code-lang {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text3);
+      }
+
+      .copy-btn {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text3);
+        background: none;
+        border: 1px solid var(--border);
+        padding: 3px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+        letter-spacing: 0.05em;
+      }
+
+      .copy-btn:hover {
+        color: var(--text);
+        border-color: var(--border2);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .copy-btn.copied {
+        color: var(--accent);
+        border-color: rgba(6, 214, 160, 0.3);
+      }
+
+      pre {
+        background: var(--code-bg);
+        padding: 20px 24px;
+        overflow-x: auto;
+        margin: 0;
+      }
+
+      pre::-webkit-scrollbar {
+        height: 4px;
+      }
+      pre::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      pre::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.8;
+        color: #e2e8f0;
+      }
+
+      .c-comment {
+        color: #4a5568;
+      }
+      .c-key {
+        color: var(--primary2);
+      }
+      .c-str {
+        color: #a3e635;
+      }
+      .c-kw {
+        color: var(--accent);
+      }
+      .c-var {
+        color: var(--warn);
+      }
+      .c-num {
+        color: #c084fc;
+      }
+      .c-url {
+        color: var(--text2);
+      }
+
+      /* Inline code */
+      :not(pre) > code {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        color: var(--primary2);
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-size: 12.5px;
+      }
+
+      /* ─── TABLE ──────────────────────────────────────────────── */
+      .table-wrap {
+        overflow-x: auto;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        margin: 16px 0 24px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+      }
+
+      thead tr {
+        background: var(--bg3);
+        border-bottom: 1px solid var(--border2);
+      }
+
+      thead th {
+        padding: 12px 18px;
+        text-align: left;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text3);
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.1s;
+      }
+
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      tbody td {
+        padding: 11px 18px;
+        color: var(--text2);
+        vertical-align: top;
+        line-height: 1.6;
+      }
+
+      tbody td:first-child {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      /* ─── CALLOUTS ───────────────────────────────────────────── */
+      .callout {
+        display: flex;
+        gap: 14px;
+        padding: 16px 20px;
+        border-radius: var(--radius);
+        margin: 16px 0;
+        font-size: 13.5px;
+      }
+
+      .callout-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .callout-note {
+        background: rgba(245, 158, 11, 0.07);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        color: #fde68a;
+      }
+
+      .callout-tip {
+        background: rgba(6, 214, 160, 0.07);
+        border: 1px solid rgba(6, 214, 160, 0.2);
+        color: #a7f3d0;
+      }
+
+      .callout-danger {
+        background: rgba(248, 113, 113, 0.07);
+        border: 1px solid rgba(248, 113, 113, 0.2);
+        color: #fca5a5;
+      }
+
+      /* ─── STEPS ──────────────────────────────────────────────── */
+      .steps {
+        margin: 16px 0 24px;
+      }
+
+      .step {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 4px;
+        position: relative;
+      }
+
+      .step:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 34px;
+        bottom: -4px;
+        width: 1px;
+        background: var(--border);
+      }
+
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        color: var(--primary2);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .step-content {
+        flex: 1;
+        padding-bottom: 24px;
+      }
+      .step-title {
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+      .step-desc {
+        font-size: 13.5px;
+        color: var(--text2);
+      }
+
+      /* ─── ENDPOINT SUMMARY TABLE ─────────────────────────────── */
+      .method-cell {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px !important;
+        border-radius: 3px;
+        white-space: nowrap;
+      }
+
+      /* ─── GRID CARDS ─────────────────────────────────────────── */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 16px 0;
+      }
+
+      .card {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      .card-title {
+        font-family: var(--font-head);
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+
+      .card p {
+        font-size: 13px;
+        margin: 0;
+      }
+
+      /* ─── SEARCH ─────────────────────────────────────────────── */
+      .search-wrap {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .search-input {
+        width: 100%;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px 8px 34px;
+        color: var(--text);
+        font-size: 13px;
+        font-family: var(--font-body);
+        outline: none;
+        transition: border-color 0.15s;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%2364748b' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 10px center;
+      }
+
+      .search-input:focus {
+        border-color: var(--primary);
+      }
+      .search-input::placeholder {
+        color: var(--text3);
+      }
+
+      /* ─── FOOTER ─────────────────────────────────────────────── */
+      .footer {
+        margin-top: 80px;
+        padding-top: 32px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .footer p {
+        font-size: 12px;
+        color: var(--text3);
+        margin: 0;
+      }
+
+      /* ─── MOBILE TOGGLE ──────────────────────────────────────── */
+      .mobile-nav-btn {
+        display: none;
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 200;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        cursor: pointer;
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99;
+      }
+
+      /* ─── RESPONSIVE ─────────────────────────────────────────── */
+      @media (max-width: 900px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.25s;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .sidebar-overlay.open {
+          display: block;
+        }
+        .mobile-nav-btn {
+          display: block;
+        }
+        .main {
+          margin-left: 0;
+        }
+        .hero {
+          padding: 60px 28px 40px;
+        }
+        .hero h1 {
+          font-size: 34px;
+        }
+        .content {
+          padding: 0 28px 60px;
+        }
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+        .footer {
+          flex-direction: column;
+          gap: 8px;
+          align-items: flex-start;
+        }
+      }
+
+      /* ─── ANIMATIONS ─────────────────────────────────────────── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .hero > * {
+        animation: fadeUp 0.5s both;
+      }
+      .hero > *:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .hero > *:nth-child(2) {
+        animation-delay: 0.12s;
+      }
+      .hero > *:nth-child(3) {
+        animation-delay: 0.18s;
+      }
+      .hero > *:nth-child(4) {
+        animation-delay: 0.24s;
+      }
+
+      /* Highlighted text in search */
+      mark {
+        background: rgba(245, 158, 11, 0.25);
+        color: var(--warn);
+        border-radius: 2px;
+      }
+
+      /* Jump anchor offset */
+      [id] {
+        scroll-margin-top: 28px;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 48px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Mobile toggle -->
+    <button class="mobile-nav-btn" onclick="toggleSidebar()" aria-label="Menu">
+      ☰
+    </button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- ─── SIDEBAR ──────────────────────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="kc-badge">
+          <div class="kc-icon">KC</div>
+          <div>
+            <div class="kc-name">Keycloak</div>
+            <div class="kc-version">v25.0 · Guia de Integração</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <input
+          class="search-input"
+          type="text"
+          id="searchInput"
+          placeholder="Pesquisar..."
+          oninput="handleSearch(this.value)"
+        />
+      </div>
+
+      <nav class="sidebar-nav" id="sidebarNav">
+        <div class="nav-section-label">Início</div>
+        <a href="#intro" class="nav-item active"
+          ><span class="nav-num">01</span> Introdução</a
+        >
+        <a href="#config" class="nav-item"
+          ><span class="nav-num">02</span> Configuração</a
+        >
+        <a href="#config-docker" class="nav-item sub"
+          ><span class="nav-dot"></span> Com Docker</a
+        >
+        <a href="#config-manual" class="nav-item sub"
+          ><span class="nav-dot"></span> Sem Docker</a
+        >
+        <a href="#config-web" class="nav-item sub"
+          ><span class="nav-dot"></span> Interface Web</a
+        >
+
+        <div class="nav-section-label">Endpoints</div>
+        <a href="#endpoints" class="nav-item"
+          ><span class="nav-num">03</span> OpenID Connect</a
+        >
+        <a href="#ep-login" class="nav-item sub"
+          ><span class="nav-dot"></span> Login</a
+        >
+        <a href="#ep-refresh" class="nav-item sub"
+          ><span class="nav-dot"></span> Refresh Token</a
+        >
+        <a href="#ep-introspect" class="nav-item sub"
+          ><span class="nav-dot"></span> Verificar Token</a
+        >
+        <a href="#ep-logout" class="nav-item sub"
+          ><span class="nav-dot"></span> Logout</a
+        >
+
+        <div class="nav-section-label">Admin API</div>
+        <a href="#admin" class="nav-item"
+          ><span class="nav-num">04</span> Utilizadores</a
+        >
+        <a href="#grupos" class="nav-item"
+          ><span class="nav-num">05</span> Grupos</a
+        >
+
+        <div class="nav-section-label">Integrações</div>
+        <a href="#laravel" class="nav-item"
+          ><span class="nav-num">06</span> Laravel</a
+        >
+        <a href="#codeigniter" class="nav-item"
+          ><span class="nav-num">07</span> CodeIgniter 4</a
+        >
+
+        <div class="nav-section-label">Referência</div>
+        <a href="#fluxo" class="nav-item"
+          ><span class="nav-num">08</span> Fluxo Auth</a
+        >
+        <a href="#resumo" class="nav-item"
+          ><span class="nav-num">09</span> Todos os Endpoints</a
+        >
+        <a href="#troubleshoot" class="nav-item"
+          ><span class="nav-num">10</span> Troubleshooting</a
+        >
+      </nav>
+    </aside>
+
+    <!-- ─── MAIN ──────────────────────────────────────────────────────────────── -->
+    <main class="main">
+      <!-- HERO -->
+      <div class="hero">
+        <div class="hero-eyebrow">Documentação Técnica</div>
+        <h1>Keycloak 25.0</h1>
+        <p class="hero-sub">
+          Guia completo de instalação, configuração dos endpoints e integração
+          com Laravel e CodeIgniter 4.
+        </p>
+        <div class="hero-tags">
+          <span class="tag tag-blue">OpenID Connect</span>
+          <span class="tag tag-blue">OAuth 2.0</span>
+          <span class="tag tag-green">Laravel</span>
+          <span class="tag tag-green">CodeIgniter 4</span>
+          <span class="tag tag-yellow">Docker</span>
+          <span class="tag tag-yellow">JWT</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- ─── 1. INTRODUÇÃO ─────────────────────────────────────── -->
+        <div class="section" id="intro">
+          <div class="section-header">
+            <span class="section-num">01</span>
+            <h2>O que é o Keycloak?</h2>
+          </div>
+
+          <p>
+            O <strong>Keycloak</strong> é uma solução open-source de
+            <em>Identity and Access Management (IAM)</em>. Centraliza
+            autenticação, autorização e gestão de utilizadores, permitindo que
+            aplicações diferentes (Laravel, CodeIgniter, NestJS, etc.) partilhem
+            o mesmo sistema de login sem reimplementar lógica de segurança em
+            cada projeto.
+          </p>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">Autenticação JWT</div>
+              <p>
+                Emissão de <code>access_token</code> e
+                <code>refresh_token</code> seguindo o padrão OpenID Connect /
+                OAuth 2.0.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Gestão Centralizada</div>
+              <p>
+                Utilizadores, grupos, roles e permissões geridos num único lugar
+                para todos os sistemas.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Refresh de Tokens</div>
+              <p>
+                Renovação automática de tokens sem necessidade de novo login do
+                utilizador.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Introspection</div>
+              <p>
+                Verificação de validade de tokens em tempo real nos middlewares
+                das aplicações.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 2. CONFIGURAÇÃO ───────────────────────────────────── -->
+        <div class="section" id="config">
+          <div class="section-header">
+            <span class="section-num">02</span>
+            <h2>Configuração e Instalação</h2>
+          </div>
+
+          <div class="sub-section" id="config-docker">
+            <h3>Com Docker (Recomendado)</h3>
+            <p>
+              Crie o ficheiro <code>docker-compose.yml</code> com o seguinte
+              conteúdo:
+            </p>
+
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">yaml · docker-compose.yml</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">version</span>: <span class="c-str">"3.8"</span>
+
+<span class="c-kw">services</span>:
+  <span class="c-key">postgres</span>:
+    <span class="c-kw">image</span>: <span class="c-str">postgres:15</span>
+    <span class="c-kw">container_name</span>: <span class="c-str">postgres</span>
+    <span class="c-kw">environment</span>:
+      <span class="c-key">POSTGRES_DB</span>: <span class="c-str">keycloak</span>
+      <span class="c-key">POSTGRES_USER</span>: <span class="c-str">keycloak</span>
+      <span class="c-key">POSTGRES_PASSWORD</span>: <span class="c-str">keycloak</span>
+    <span class="c-kw">volumes</span>:
+      - <span class="c-str">postgres_data:/var/lib/postgresql/data</span>
+    <span class="c-kw">networks</span>:
+      - <span class="c-str">keycloak_net</span>
+
+  <span class="c-key">keycloak</span>:
+    <span class="c-kw">image</span>: <span class="c-str">quay.io/keycloak/keycloak:25.0</span>
+    <span class="c-kw">container_name</span>: <span class="c-str">keycloak</span>
+    <span class="c-kw">command</span>: <span class="c-str">["start-dev"]</span>
+    <span class="c-kw">environment</span>:
+      <span class="c-key">KEYCLOAK_ADMIN</span>: <span class="c-str">admin</span>
+      <span class="c-key">KEYCLOAK_ADMIN_PASSWORD</span>: <span class="c-str">admin123</span>
+      <span class="c-key">KC_DB</span>: <span class="c-str">postgres</span>
+      <span class="c-key">KC_DB_URL</span>: <span class="c-str">jdbc:postgresql://postgres:5432/keycloak</span>
+      <span class="c-key">KC_DB_USERNAME</span>: <span class="c-str">keycloak</span>
+      <span class="c-key">KC_DB_PASSWORD</span>: <span class="c-str">keycloak</span>
+    <span class="c-kw">ports</span>:
+      - <span class="c-str">"8080:8080"</span>
+    <span class="c-kw">depends_on</span>:
+      - <span class="c-str">postgres</span>
+    <span class="c-kw">networks</span>:
+      - <span class="c-str">keycloak_net</span>
+
+<span class="c-kw">volumes</span>:
+  <span class="c-key">postgres_data</span>:
+
+<span class="c-kw">networks</span>:
+  <span class="c-key">keycloak_net</span>:
+    <span class="c-kw">driver</span>: <span class="c-str">bridge</span></code></pre>
+            </div>
+
+            <h4>Comandos</h4>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># Iniciar em background</span>
+docker compose up -d
+
+<span class="c-comment"># Ver logs do Keycloak</span>
+docker compose logs -f keycloak
+
+<span class="c-comment"># Parar</span>
+docker compose down
+
+<span class="c-comment"># Parar e apagar dados (volumes)</span>
+docker compose down -v</code></pre>
+            </div>
+
+            <div class="callout callout-note">
+              <span class="callout-icon">⚠️</span>
+              <span
+                >O modo <code>start-dev</code> não deve ser usado em produção.
+                Para produção use <code>start</code> com HTTPS
+                configurado.</span
+              >
+            </div>
+          </div>
+
+          <div class="sub-section" id="config-manual">
+            <h3>Sem Docker (Instalação Manual)</h3>
+            <p>Pré-requisito: Java 17 ou superior instalado.</p>
+
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># 1. Descarregar o Keycloak 25.0</span>
+wget https://github.com/keycloak/keycloak/releases/download/25.0.0/keycloak-25.0.0.zip
+
+<span class="c-comment"># 2. Descompactar</span>
+unzip keycloak-25.0.0.zip
+cd keycloak-25.0.0
+
+<span class="c-comment"># 3. Definir credenciais admin</span>
+export KEYCLOAK_ADMIN=admin
+export KEYCLOAK_ADMIN_PASSWORD=admin123
+
+<span class="c-comment"># 4. Iniciar em modo desenvolvimento</span>
+bin/kc.sh start-dev
+
+<span class="c-comment"># Windows:</span>
+bin\kc.bat start-dev</code></pre>
+            </div>
+
+            <h4>Produção com PostgreSQL</h4>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>bin/kc.sh start \
+  --db=postgres \
+  --db-url=jdbc:postgresql://localhost:5432/keycloak \
+  --db-username=keycloak \
+  --db-password=keycloak \
+  --hostname=seu-dominio.com \
+  --https-certificate-file=/caminho/cert.pem \
+  --https-certificate-key-file=/caminho/key.pem</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section" id="config-web">
+            <h3>Configuração Inicial via Interface Web</h3>
+            <p>
+              Após iniciar, aceda a <code>http://localhost:8080</code> e siga os
+              passos:
+            </p>
+
+            <div class="steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">Login Admin</div>
+                  <div class="step-desc">
+                    Aceder <code>http://localhost:8080/admin</code> —
+                    credenciais: <code>admin</code> / <code>admin123</code>
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">Criar Realm</div>
+                  <div class="step-desc">
+                    Clicar em <strong>"master"</strong> (top-left) →
+                    <strong>"Create Realm"</strong> → definir nome (ex:
+                    <code>minha-app</code>)
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Criar Client</div>
+                  <div class="step-desc">
+                    Realm → <strong>Clients</strong> →
+                    <strong>Create client</strong> → definir Client ID (ex:
+                    <code>minha-app-client</code>)
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Configurar Client</div>
+                  <div class="step-desc">
+                    <strong>Client Authentication: ON</strong> ·
+                    <strong>Direct Access Grants: ON</strong> → Save
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">Obter Client Secret</div>
+                  <div class="step-desc">
+                    Aba <strong>Credentials</strong> → copiar o
+                    <strong>Client Secret</strong> gerado
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">6</div>
+                <div class="step-content">
+                  <div class="step-title">Criar Roles</div>
+                  <div class="step-desc">
+                    <strong>Realm roles</strong> →
+                    <strong>Create role</strong> (ex: <code>ADMIN</code>,
+                    <code>USER</code>, <code>MANAGER</code>)
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">7</div>
+                <div class="step-content">
+                  <div class="step-title">Criar Utilizador</div>
+                  <div class="step-desc">
+                    <strong>Users</strong> → <strong>Add user</strong> → definir
+                    email/username → <strong>Credentials</strong> → Set Password
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h4>Variáveis de Ambiente</h4>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">env</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-key">KEYCLOAK_URL</span>=<span class="c-str">http://localhost:8080</span>
+<span class="c-key">KEYCLOAK_REALM</span>=<span class="c-str">minha-app</span>
+<span class="c-key">KEYCLOAK_CLIENT_ID</span>=<span class="c-str">minha-app-client</span>
+<span class="c-key">KEYCLOAK_CLIENT_SECRET</span>=<span class="c-str">seu-client-secret-aqui</span>
+<span class="c-key">KEYCLOAK_ADMIN_USERNAME</span>=<span class="c-str">admin</span>
+<span class="c-key">KEYCLOAK_ADMIN_PASSWORD</span>=<span class="c-str">admin123</span></code></pre>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 3. ENDPOINTS ──────────────────────────────────────── -->
+        <div class="section" id="endpoints">
+          <div class="section-header">
+            <span class="section-num">03</span>
+            <h2>Endpoints OpenID Connect</h2>
+          </div>
+
+          <p>
+            Todos os endpoints seguem o padrão OpenID Connect. A URL base é:
+          </p>
+          <div class="code-wrap">
+            <div class="code-header"><span class="code-lang">url</span></div>
+            <pre><code>http://localhost:8080/realms/<span class="c-var">{REALM}</span>/protocol/openid-connect</code></pre>
+          </div>
+          <div class="callout callout-tip">
+            <span
+              >Substitua <code>{REALM}</code> pelo nome do seu realm, ex:
+              <code>minha-app</code>. O nome é
+              <strong>case-sensitive</strong>.</span
+            >
+          </div>
+
+          <!-- LOGIN -->
+          <div class="sub-section" id="ep-login">
+            <h3>Login (Autenticação)</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/realms/<span class="realm-var">{realm}</span
+                >/protocol/openid-connect/token</span
+              >
+            </div>
+            <p>
+              Autentica um utilizador com email e password e retorna os tokens
+              de acesso.
+            </p>
+
+            <h4>Parâmetros do Request</h4>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Campo</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Content-Type</td>
+                    <td>application/x-www-form-urlencoded</td>
+                  </tr>
+                  <tr>
+                    <td>grant_type</td>
+                    <td>password <em>(fixo)</em></td>
+                  </tr>
+                  <tr>
+                    <td>client_id</td>
+                    <td>ID do client configurado no Keycloak</td>
+                  </tr>
+                  <tr>
+                    <td>client_secret</td>
+                    <td>Secret do client (aba Credentials)</td>
+                  </tr>
+                  <tr>
+                    <td>username</td>
+                    <td>Email ou username do utilizador</td>
+                  </tr>
+                  <tr>
+                    <td>password</td>
+                    <td>Password do utilizador</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>Exemplo cURL</h4>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/realms/minha-app/protocol/openid-connect/token \
+  -H <span class="c-str">"Content-Type: application/x-www-form-urlencoded"</span> \
+  -d <span class="c-str">"grant_type=password"</span> \
+  -d <span class="c-str">"client_id=minha-app-client"</span> \
+  -d <span class="c-str">"client_secret=SEU_SECRET"</span> \
+  -d <span class="c-str">"username=user@email.com"</span> \
+  -d <span class="c-str">"password=senha123"</span></code></pre>
+            </div>
+
+            <h4>Resposta 200 OK</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">json</span></div>
+              <pre><code>{
+  <span class="c-key">"access_token"</span>:      <span class="c-str">"eyJhbGciOiJSUzI1NiIsInR..."</span>,
+  <span class="c-key">"expires_in"</span>:         <span class="c-num">300</span>,
+  <span class="c-key">"refresh_expires_in"</span>: <span class="c-num">1800</span>,
+  <span class="c-key">"refresh_token"</span>:     <span class="c-str">"eyJhbGciOiJIUzUxMiIsInR..."</span>,
+  <span class="c-key">"token_type"</span>:        <span class="c-str">"Bearer"</span>,
+  <span class="c-key">"session_state"</span>:     <span class="c-str">"abc-123"</span>,
+  <span class="c-key">"scope"</span>:            <span class="c-str">"profile email"</span>
+}</code></pre>
+            </div>
+
+            <h4>Possíveis Erros</h4>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Descrição</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>401 Unauthorized</td>
+                    <td>
+                      Credenciais inválidas (password incorreta ou utilizador
+                      não existe)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>400 Bad Request</td>
+                    <td>
+                      Parâmetros em falta ou <code>client_id</code> errado
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>401 invalid_client</td>
+                    <td>Client secret incorreto</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- REFRESH -->
+          <div class="sub-section" id="ep-refresh">
+            <h3>Refresh Token</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/realms/<span class="realm-var">{realm}</span
+                >/protocol/openid-connect/token</span
+              >
+            </div>
+            <p>
+              Renova o <code>access_token</code> usando o
+              <code>refresh_token</code> sem necessitar de nova password. Use
+              quando o access_token expirar (por padrão a cada 5 minutos).
+            </p>
+
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/realms/minha-app/protocol/openid-connect/token \
+  -H <span class="c-str">"Content-Type: application/x-www-form-urlencoded"</span> \
+  -d <span class="c-str">"grant_type=refresh_token"</span> \
+  -d <span class="c-str">"client_id=minha-app-client"</span> \
+  -d <span class="c-str">"client_secret=SEU_SECRET"</span> \
+  -d <span class="c-str">"refresh_token=eyJhbGciOiJIUzUxMiIsInR..."</span></code></pre>
+            </div>
+            <div class="callout callout-tip">
+              <span
+                >Retorna os mesmos campos do login com um novo
+                <code>access_token</code> e
+                <code>refresh_token</code> renovados.</span
+              >
+            </div>
+          </div>
+
+          <!-- INTROSPECT -->
+          <div class="sub-section" id="ep-introspect">
+            <h3>Verificar Token (Introspection)</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/realms/<span class="realm-var">{realm}</span
+                >/protocol/openid-connect/token/introspect</span
+              >
+            </div>
+            <p>
+              Verifica se um token é válido e retorna informações sobre ele.
+              Usado em middlewares para proteger rotas.
+            </p>
+
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/realms/minha-app/protocol/openid-connect/token/introspect \
+  -H <span class="c-str">"Content-Type: application/x-www-form-urlencoded"</span> \
+  -d <span class="c-str">"token=eyJhbGciOiJSUzI1NiIsInR..."</span> \
+  -d <span class="c-str">"client_id=minha-app-client"</span> \
+  -d <span class="c-str">"client_secret=SEU_SECRET"</span></code></pre>
+            </div>
+
+            <h4>Token Válido</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">json</span></div>
+              <pre><code>{
+  <span class="c-key">"active"</span>:               <span class="c-kw">true</span>,
+  <span class="c-key">"sub"</span>:                  <span class="c-str">"uuid-do-utilizador"</span>,
+  <span class="c-key">"email"</span>:               <span class="c-str">"user@email.com"</span>,
+  <span class="c-key">"preferred_username"</span>:  <span class="c-str">"user@email.com"</span>,
+  <span class="c-key">"realm_access"</span>: { <span class="c-key">"roles"</span>: [<span class="c-str">"USER"</span>, <span class="c-str">"offline_access"</span>] },
+  <span class="c-key">"exp"</span>:                  <span class="c-num">1712345678</span>,
+  <span class="c-key">"iat"</span>:                  <span class="c-num">1712345378</span>
+}</code></pre>
+            </div>
+
+            <h4>Token Inválido / Expirado</h4>
+            <div class="code-wrap">
+              <div class="code-header"><span class="code-lang">json</span></div>
+              <pre><code>{ <span class="c-key">"active"</span>: <span class="c-kw">false</span> }</code></pre>
+            </div>
+          </div>
+
+          <!-- LOGOUT -->
+          <div class="sub-section" id="ep-logout">
+            <h3>Logout</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/realms/<span class="realm-var">{realm}</span
+                >/protocol/openid-connect/logout</span
+              >
+            </div>
+            <p>
+              Invalida a sessão do utilizador e revoga o
+              <code>refresh_token</code> no servidor Keycloak.
+            </p>
+
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/realms/minha-app/protocol/openid-connect/logout \
+  -H <span class="c-str">"Content-Type: application/x-www-form-urlencoded"</span> \
+  -d <span class="c-str">"client_id=minha-app-client"</span> \
+  -d <span class="c-str">"client_secret=SEU_SECRET"</span> \
+  -d <span class="c-str">"refresh_token=eyJhbGciOiJIUzUxMiIsInR..."</span></code></pre>
+            </div>
+            <div class="callout callout-tip">
+              <span
+                >Resposta <strong>204 No Content</strong> em caso de sucesso.
+                Após o logout, o <code>refresh_token</code> não pode mais ser
+                utilizado.</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 4. ADMIN API ───────────────────────────────────────── -->
+        <div class="section" id="admin">
+          <div class="section-header">
+            <span class="section-num">04</span>
+            <h2>Admin API — Gestão de Utilizadores</h2>
+          </div>
+
+          <p>
+            A Admin API permite gerir utilizadores, roles e grupos
+            programaticamente. A URL base é diferente:
+          </p>
+          <div class="code-wrap">
+            <div class="code-header"><span class="code-lang">url</span></div>
+            <pre><code>http://localhost:8080/admin/realms/<span class="c-var">{realm}</span></code></pre>
+          </div>
+          <div class="callout callout-danger">
+            <span
+              >Em produção, nunca exponha a Admin API diretamente ao frontend.
+              Use sempre através do seu backend.</span
+            >
+          </div>
+
+          <div class="sub-section">
+            <h3>Criar Utilizador</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/admin/realms/minha-app/users \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '{
+    <span class="c-key">"username"</span>:      <span class="c-str">"joao.silva"</span>,
+    <span class="c-key">"email"</span>:         <span class="c-str">"joao@empresa.com"</span>,
+    <span class="c-key">"firstName"</span>:     <span class="c-str">"Joao"</span>,
+    <span class="c-key">"lastName"</span>:      <span class="c-str">"Silva"</span>,
+    <span class="c-key">"enabled"</span>:       <span class="c-kw">true</span>,
+    <span class="c-key">"emailVerified"</span>: <span class="c-kw">true</span>,
+    <span class="c-key">"credentials"</span>: [{
+      <span class="c-key">"type"</span>:      <span class="c-str">"password"</span>,
+      <span class="c-key">"value"</span>:     <span class="c-str">"senha123"</span>,
+      <span class="c-key">"temporary"</span>: <span class="c-kw">false</span>
+    }],
+    <span class="c-key">"attributes"</span>: {
+      <span class="c-key">"position"</span>: [<span class="c-str">"Desenvolvedor"</span>]
+    }
+  }'</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Listar / Buscar Utilizadores</h3>
+            <div class="endpoint-block">
+              <span class="method method-get">GET</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># Listar todos</span>
+curl -X GET http://localhost:8080/admin/realms/minha-app/users \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span>
+
+<span class="c-comment"># Filtrar por email (exact match)</span>
+curl -X GET <span class="c-str">"http://localhost:8080/admin/realms/minha-app/users?email=joao@empresa.com&exact=true"</span> \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span>
+
+<span class="c-comment"># Buscar por ID</span>
+curl -X GET http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span> \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span></code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Atualizar Utilizador</h3>
+            <div class="endpoint-block">
+              <span class="method method-put">PUT</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users/<span class="realm-var">{userId}</span></span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X PUT http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span> \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '{ <span class="c-key">"firstName"</span>: <span class="c-str">"Joao"</span>, <span class="c-key">"lastName"</span>: <span class="c-str">"Atualizado"</span> }'</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Alterar Password</h3>
+            <div class="endpoint-block">
+              <span class="method method-put">PUT</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users/<span class="realm-var">{userId}</span
+                >/reset-password</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X PUT http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span>/reset-password \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '{ <span class="c-key">"type"</span>: <span class="c-str">"password"</span>, <span class="c-key">"value"</span>: <span class="c-str">"novaSenha123"</span>, <span class="c-key">"temporary"</span>: <span class="c-kw">false</span> }'</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Atribuir Role a Utilizador</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users/<span class="realm-var">{userId}</span
+                >/role-mappings/realm</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># 1. Listar roles para obter o ID</span>
+curl -X GET http://localhost:8080/admin/realms/minha-app/roles \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span>
+
+<span class="c-comment"># 2. Atribuir role</span>
+curl -X POST http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span>/role-mappings/realm \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '[{ <span class="c-key">"id"</span>: <span class="c-str">"uuid-da-role"</span>, <span class="c-key">"name"</span>: <span class="c-str">"ADMIN"</span> }]'</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 5. GRUPOS ─────────────────────────────────────────── -->
+        <div class="section" id="grupos">
+          <div class="section-header">
+            <span class="section-num">05</span>
+            <h2>Gestão de Grupos</h2>
+          </div>
+          <p>
+            Grupos permitem organizar utilizadores e atribuir roles
+            coletivamente.
+          </p>
+
+          <div class="sub-section">
+            <h3>Criar Grupo</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/groups</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/admin/realms/minha-app/groups \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '{ <span class="c-key">"name"</span>: <span class="c-str">"Equipa-Financas"</span> }'</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Adicionar / Remover Utilizador de Grupo</h3>
+            <div class="endpoint-block">
+              <span class="method method-put">PUT</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users/<span class="realm-var">{userId}</span>/groups/<span
+                  class="realm-var"
+                  >{groupId}</span
+                ></span
+              >
+            </div>
+            <div class="endpoint-block" style="margin-top: 8px">
+              <span class="method method-delete">DELETE</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/users/<span class="realm-var">{userId}</span>/groups/<span
+                  class="realm-var"
+                  >{groupId}</span
+                ></span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># Adicionar ao grupo</span>
+curl -X PUT http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span>/groups/<span class="c-var">{groupId}</span> \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span>
+
+<span class="c-comment"># Remover do grupo</span>
+curl -X DELETE http://localhost:8080/admin/realms/minha-app/users/<span class="c-var">{userId}</span>/groups/<span class="c-var">{groupId}</span> \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span></code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Atribuir Role a Grupo</h3>
+            <div class="endpoint-block">
+              <span class="method method-post">POST</span>
+              <span class="endpoint-path"
+                >/admin/realms/<span class="realm-var">{realm}</span
+                >/groups/<span class="realm-var">{groupId}</span
+                >/role-mappings/realm</span
+              >
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>curl -X POST http://localhost:8080/admin/realms/minha-app/groups/<span class="c-var">{groupId}</span>/role-mappings/realm \
+  -H <span class="c-str">"Authorization: Bearer {admin_token}"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d '[{ <span class="c-key">"id"</span>: <span class="c-str">"uuid-da-role"</span>, <span class="c-key">"name"</span>: <span class="c-str">"MANAGER"</span> }]'</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 6. LARAVEL ────────────────────────────────────────── -->
+        <div class="section" id="laravel">
+          <div class="section-header">
+            <span class="section-num">06</span>
+            <h2>Integração com Laravel</h2>
+          </div>
+
+          <div class="sub-section">
+            <h3>Instalação e Configuração</h3>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment"># O Guzzle já vem com o Laravel. Pacote JWT opcional:</span>
+composer require firebase/php-jwt</code></pre>
+            </div>
+            <p>Adicionar ao <code>.env</code> do Laravel:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">env</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-key">KEYCLOAK_URL</span>=<span class="c-str">http://localhost:8080</span>
+<span class="c-key">KEYCLOAK_REALM</span>=<span class="c-str">minha-app</span>
+<span class="c-key">KEYCLOAK_CLIENT_ID</span>=<span class="c-str">minha-app-client</span>
+<span class="c-key">KEYCLOAK_CLIENT_SECRET</span>=<span class="c-str">seu-client-secret</span></code></pre>
+            </div>
+            <p>Criar <code>config/keycloak.php</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · config/keycloak.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">return</span> [
+    <span class="c-str">'url'</span>           => env(<span class="c-str">'KEYCLOAK_URL'</span>, <span class="c-str">'http://localhost:8080'</span>),
+    <span class="c-str">'realm'</span>         => env(<span class="c-str">'KEYCLOAK_REALM'</span>),
+    <span class="c-str">'client_id'</span>     => env(<span class="c-str">'KEYCLOAK_CLIENT_ID'</span>),
+    <span class="c-str">'client_secret'</span> => env(<span class="c-str">'KEYCLOAK_CLIENT_SECRET'</span>),
+];</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Serviço Keycloak</h3>
+            <p>Criar <code>app/Services/KeycloakService.php</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang"
+                  >php · app/Services/KeycloakService.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">namespace</span> App\Services;
+
+<span class="c-kw">use</span> Illuminate\Support\Facades\Http;
+
+<span class="c-kw">class</span> <span class="c-key">KeycloakService</span>
+{
+    <span class="c-kw">private</span> string $tokenUrl;
+    <span class="c-kw">private</span> string $baseUrl;
+    <span class="c-kw">private</span> string $realm;
+    <span class="c-kw">private</span> string $clientId;
+    <span class="c-kw">private</span> string $clientSecret;
+
+    <span class="c-kw">public function</span> <span class="c-key">__construct</span>()
+    {
+        $this->baseUrl       = config(<span class="c-str">'keycloak.url'</span>);
+        $this->realm         = config(<span class="c-str">'keycloak.realm'</span>);
+        $this->clientId      = config(<span class="c-str">'keycloak.client_id'</span>);
+        $this->clientSecret  = config(<span class="c-str">'keycloak.client_secret'</span>);
+        $this->tokenUrl      = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/token"</span>;
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">login</span>(string $email, string $password): array
+    {
+        $response = Http::asForm()->post($this->tokenUrl, [
+            <span class="c-str">'grant_type'</span>    => <span class="c-str">'password'</span>,
+            <span class="c-str">'client_id'</span>     => $this->clientId,
+            <span class="c-str">'client_secret'</span> => $this->clientSecret,
+            <span class="c-str">'username'</span>      => $email,
+            <span class="c-str">'password'</span>      => $password,
+        ]);
+
+        <span class="c-kw">if</span> ($response->failed()) {
+            <span class="c-kw">throw new</span> \Exception(<span class="c-str">'Login failed: '</span> . $response->body());
+        }
+
+        <span class="c-kw">return</span> $response->json();
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">refreshToken</span>(string $refreshToken): array
+    {
+        $response = Http::asForm()->post($this->tokenUrl, [
+            <span class="c-str">'grant_type'</span>    => <span class="c-str">'refresh_token'</span>,
+            <span class="c-str">'client_id'</span>     => $this->clientId,
+            <span class="c-str">'client_secret'</span> => $this->clientSecret,
+            <span class="c-str">'refresh_token'</span> => $refreshToken,
+        ]);
+
+        <span class="c-kw">if</span> ($response->failed()) {
+            <span class="c-kw">throw new</span> \Exception(<span class="c-str">'Refresh failed: '</span> . $response->body());
+        }
+
+        <span class="c-kw">return</span> $response->json();
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">verifyToken</span>(string $token): array
+    {
+        $url = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/token/introspect"</span>;
+
+        $response = Http::asForm()->post($url, [
+            <span class="c-str">'token'</span>         => $token,
+            <span class="c-str">'client_id'</span>     => $this->clientId,
+            <span class="c-str">'client_secret'</span> => $this->clientSecret,
+        ]);
+
+        <span class="c-kw">return</span> $response->json();
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">logout</span>(string $refreshToken): void
+    {
+        $url = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/logout"</span>;
+
+        Http::asForm()->post($url, [
+            <span class="c-str">'client_id'</span>     => $this->clientId,
+            <span class="c-str">'client_secret'</span> => $this->clientSecret,
+            <span class="c-str">'refresh_token'</span> => $refreshToken,
+        ]);
+    }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Middleware de Autenticação</h3>
+            <p>Criar <code>app/Http/Middleware/KeycloakAuth.php</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · KeycloakAuth.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">namespace</span> App\Http\Middleware;
+
+<span class="c-kw">use</span> Closure;
+<span class="c-kw">use</span> App\Services\KeycloakService;
+
+<span class="c-kw">class</span> <span class="c-key">KeycloakAuth</span>
+{
+    <span class="c-kw">public function</span> <span class="c-key">handle</span>($request, Closure $next)
+    {
+        $token = $request->bearerToken();
+
+        <span class="c-kw">if</span> (!$token) {
+            <span class="c-kw">return</span> response()->json([<span class="c-str">'message'</span> => <span class="c-str">'Token não fornecido'</span>], <span class="c-num">401</span>);
+        }
+
+        $keycloak   = <span class="c-kw">new</span> KeycloakService();
+        $introspect = $keycloak->verifyToken($token);
+
+        <span class="c-kw">if</span> (empty($introspect[<span class="c-str">'active'</span>])) {
+            <span class="c-kw">return</span> response()->json([<span class="c-str">'message'</span> => <span class="c-str">'Token inválido ou expirado'</span>], <span class="c-num">401</span>);
+        }
+
+        $request->merge([<span class="c-str">'keycloak_user'</span> => $introspect]);
+
+        <span class="c-kw">return</span> $next($request);
+    }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Controlador e Rotas</h3>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · AuthController.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">namespace</span> App\Http\Controllers;
+
+<span class="c-kw">use</span> App\Services\KeycloakService;
+<span class="c-kw">use</span> Illuminate\Http\Request;
+
+<span class="c-kw">class</span> <span class="c-key">AuthController</span> <span class="c-kw">extends</span> Controller
+{
+    <span class="c-kw">public function</span> <span class="c-key">login</span>(Request $request)
+    {
+        $request->validate([
+            <span class="c-str">'email'</span>    => <span class="c-str">'required|email'</span>,
+            <span class="c-str">'password'</span> => <span class="c-str">'required'</span>,
+        ]);
+
+        <span class="c-kw">try</span> {
+            $tokens = (new KeycloakService())->login($request->email, $request->password);
+            <span class="c-kw">return</span> response()->json($tokens);
+        } <span class="c-kw">catch</span> (\Exception $e) {
+            <span class="c-kw">return</span> response()->json([<span class="c-str">'message'</span> => <span class="c-str">'Credenciais inválidas'</span>], <span class="c-num">401</span>);
+        }
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">refresh</span>(Request $request)
+    {
+        $request->validate([<span class="c-str">'refresh_token'</span> => <span class="c-str">'required'</span>]);
+        <span class="c-kw">try</span> {
+            $tokens = (new KeycloakService())->refreshToken($request->refresh_token);
+            <span class="c-kw">return</span> response()->json($tokens);
+        } <span class="c-kw">catch</span> (\Exception $e) {
+            <span class="c-kw">return</span> response()->json([<span class="c-str">'message'</span> => <span class="c-str">'Refresh inválido'</span>], <span class="c-num">401</span>);
+        }
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">logout</span>(Request $request)
+    {
+        $request->validate([<span class="c-str">'refresh_token'</span> => <span class="c-str">'required'</span>]);
+        (new KeycloakService())->logout($request->refresh_token);
+        <span class="c-kw">return</span> response()->json([<span class="c-str">'message'</span> => <span class="c-str">'Logout realizado'</span>]);
+    }
+}</code></pre>
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · routes/api.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>Route::post(<span class="c-str">'/auth/login'</span>,   [AuthController::class, <span class="c-str">'login'</span>]);
+Route::post(<span class="c-str">'/auth/refresh'</span>, [AuthController::class, <span class="c-str">'refresh'</span>]);
+Route::post(<span class="c-str">'/auth/logout'</span>,  [AuthController::class, <span class="c-str">'logout'</span>]);
+
+<span class="c-comment">// Rotas protegidas</span>
+Route::middleware([<span class="c-str">'keycloak.auth'</span>])->group(<span class="c-kw">function</span> () {
+    Route::get(<span class="c-str">'/profile'</span>, fn($req) => $req->keycloak_user);
+});
+
+<span class="c-comment">// Registar middleware — Laravel 10 (Kernel.php)</span>
+<span class="c-kw">protected</span> $routeMiddleware = [
+    <span class="c-str">'keycloak.auth'</span> => \App\Http\Middleware\KeycloakAuth::class,
+];
+
+<span class="c-comment">// Registar middleware — Laravel 11 (bootstrap/app.php)</span>
+->withMiddleware(<span class="c-kw">function</span> (Middleware $middleware) {
+    $middleware->alias([<span class="c-str">'keycloak.auth'</span> => KeycloakAuth::class]);
+})</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 7. CODEIGNITER ────────────────────────────────────── -->
+        <div class="section" id="codeigniter">
+          <div class="section-header">
+            <span class="section-num">07</span>
+            <h2>Integração com CodeIgniter 4</h2>
+          </div>
+
+          <div class="sub-section">
+            <h3>Instalação</h3>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">bash</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code>composer require guzzlehttp/guzzle</code></pre>
+            </div>
+            <p>Adicionar ao <code>.env</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">env</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-key">keycloak.url</span>          = <span class="c-str">http://localhost:8080</span>
+<span class="c-key">keycloak.realm</span>        = <span class="c-str">minha-app</span>
+<span class="c-key">keycloak.clientId</span>     = <span class="c-str">minha-app-client</span>
+<span class="c-key">keycloak.clientSecret</span> = <span class="c-str">seu-client-secret</span></code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Serviço Keycloak</h3>
+            <p>Criar <code>app/Services/KeycloakService.php</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang"
+                  >php · app/Services/KeycloakService.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">namespace</span> App\Services;
+
+<span class="c-kw">use</span> GuzzleHttp\Client;
+
+<span class="c-kw">class</span> <span class="c-key">KeycloakService</span>
+{
+    <span class="c-kw">private</span> Client $http;
+    <span class="c-kw">private</span> string $tokenUrl;
+    <span class="c-kw">private</span> string $baseUrl;
+    <span class="c-kw">private</span> string $realm;
+    <span class="c-kw">private</span> string $clientId;
+    <span class="c-kw">private</span> string $clientSecret;
+
+    <span class="c-kw">public function</span> <span class="c-key">__construct</span>()
+    {
+        $this->http         = <span class="c-kw">new</span> Client([<span class="c-str">'verify'</span> => <span class="c-kw">false</span>]);
+        $this->baseUrl      = env(<span class="c-str">'keycloak.url'</span>);
+        $this->realm        = env(<span class="c-str">'keycloak.realm'</span>);
+        $this->clientId     = env(<span class="c-str">'keycloak.clientId'</span>);
+        $this->clientSecret = env(<span class="c-str">'keycloak.clientSecret'</span>);
+        $this->tokenUrl     = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/token"</span>;
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">login</span>(string $email, string $password): array
+    {
+        $resp = $this->http->post($this->tokenUrl, [
+            <span class="c-str">'form_params'</span> => [
+                <span class="c-str">'grant_type'</span>    => <span class="c-str">'password'</span>,
+                <span class="c-str">'client_id'</span>     => $this->clientId,
+                <span class="c-str">'client_secret'</span> => $this->clientSecret,
+                <span class="c-str">'username'</span>      => $email,
+                <span class="c-str">'password'</span>      => $password,
+            ]
+        ]);
+        <span class="c-kw">return</span> json_decode($resp->getBody(), <span class="c-kw">true</span>);
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">refreshToken</span>(string $refreshToken): array
+    {
+        $resp = $this->http->post($this->tokenUrl, [
+            <span class="c-str">'form_params'</span> => [
+                <span class="c-str">'grant_type'</span>    => <span class="c-str">'refresh_token'</span>,
+                <span class="c-str">'client_id'</span>     => $this->clientId,
+                <span class="c-str">'client_secret'</span> => $this->clientSecret,
+                <span class="c-str">'refresh_token'</span> => $refreshToken,
+            ]
+        ]);
+        <span class="c-kw">return</span> json_decode($resp->getBody(), <span class="c-kw">true</span>);
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">verifyToken</span>(string $token): array
+    {
+        $url  = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/token/introspect"</span>;
+        $resp = $this->http->post($url, [
+            <span class="c-str">'form_params'</span> => [
+                <span class="c-str">'token'</span>         => $token,
+                <span class="c-str">'client_id'</span>     => $this->clientId,
+                <span class="c-str">'client_secret'</span> => $this->clientSecret,
+            ]
+        ]);
+        <span class="c-kw">return</span> json_decode($resp->getBody(), <span class="c-kw">true</span>);
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">logout</span>(string $refreshToken): void
+    {
+        $url = <span class="c-str">"{$this->baseUrl}/realms/{$this->realm}/protocol/openid-connect/logout"</span>;
+        $this->http->post($url, [
+            <span class="c-str">'form_params'</span> => [
+                <span class="c-str">'client_id'</span>     => $this->clientId,
+                <span class="c-str">'client_secret'</span> => $this->clientSecret,
+                <span class="c-str">'refresh_token'</span> => $refreshToken,
+            ]
+        ]);
+    }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Filtro de Autenticação</h3>
+            <p>Criar <code>app/Filters/KeycloakFilter.php</code>:</p>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang"
+                  >php · app/Filters/KeycloakFilter.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">&lt;?php</span>
+<span class="c-kw">namespace</span> App\Filters;
+
+<span class="c-kw">use</span> App\Services\KeycloakService;
+<span class="c-kw">use</span> CodeIgniter\Filters\FilterInterface;
+
+<span class="c-kw">class</span> <span class="c-key">KeycloakFilter</span> <span class="c-kw">implements</span> FilterInterface
+{
+    <span class="c-kw">public function</span> <span class="c-key">before</span>($request, $arguments = <span class="c-kw">null</span>)
+    {
+        $token = $request->getHeaderLine(<span class="c-str">'Authorization'</span>);
+        $token = str_replace(<span class="c-str">'Bearer '</span>, <span class="c-str">''</span>, $token);
+
+        <span class="c-kw">if</span> (!$token) {
+            <span class="c-kw">return</span> service(<span class="c-str">'response'</span>)
+                ->setStatusCode(<span class="c-num">401</span>)
+                ->setJSON([<span class="c-str">'message'</span> => <span class="c-str">'Token não fornecido'</span>]);
+        }
+
+        $data = (new KeycloakService())->verifyToken($token);
+
+        <span class="c-kw">if</span> (empty($data[<span class="c-str">'active'</span>])) {
+            <span class="c-kw">return</span> service(<span class="c-str">'response'</span>)
+                ->setStatusCode(<span class="c-num">401</span>)
+                ->setJSON([<span class="c-str">'message'</span> => <span class="c-str">'Token inválido ou expirado'</span>]);
+        }
+
+        session()->set(<span class="c-str">'keycloak_user'</span>, $data);
+    }
+
+    <span class="c-kw">public function</span> <span class="c-key">after</span>($request, $response, $arguments = <span class="c-kw">null</span>) {}
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <h3>Registar Filtro e Rotas</h3>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · app/Config/Filters.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-kw">public</span> array $aliases = [
+    <span class="c-str">'keycloak'</span> => \App\Filters\KeycloakFilter::class,
+];</code></pre>
+            </div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-lang">php · app/Config/Routes.php</span
+                ><button class="copy-btn" onclick="copyCode(this)">
+                  copiar
+                </button>
+              </div>
+              <pre><code><span class="c-comment">// Rotas públicas</span>
+$routes->post(<span class="c-str">'auth/login'</span>,   <span class="c-str">'AuthController::login'</span>);
+$routes->post(<span class="c-str">'auth/refresh'</span>, <span class="c-str">'AuthController::refresh'</span>);
+$routes->post(<span class="c-str">'auth/logout'</span>,  <span class="c-str">'AuthController::logout'</span>);
+
+<span class="c-comment">// Rotas protegidas</span>
+$routes->group(<span class="c-str">'api'</span>, [<span class="c-str">'filter'</span> => <span class="c-str">'keycloak'</span>], <span class="c-kw">function</span>($routes) {
+    $routes->get(<span class="c-str">'profile'</span>, <span class="c-str">'UserController::profile'</span>);
+});</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 8. FLUXO ──────────────────────────────────────────── -->
+        <div class="section" id="fluxo">
+          <div class="section-header">
+            <span class="section-num">08</span>
+            <h2>Fluxo de Autenticação Recomendado</h2>
+          </div>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Login</div>
+                <div class="step-desc">
+                  <code>POST /token</code> com
+                  <code>grant_type=password</code> → guardar
+                  <code>access_token</code> (5 min) e
+                  <code>refresh_token</code> (30 min) no cliente.
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Requisição Autenticada</div>
+                <div class="step-desc">
+                  Enviar o <code>access_token</code> em cada request:
+                  <code>Authorization: Bearer {token}</code>
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Middleware Valida</div>
+                <div class="step-desc">
+                  Backend chama <code>/introspect</code> e verifica se
+                  <code>active === true</code>. Se falso → 401.
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Token Expirado</div>
+                <div class="step-desc">
+                  Se o backend retornar 401, o cliente usa o
+                  <code>refresh_token</code> para obter um novo
+                  <code>access_token</code> automaticamente.
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <div class="step-title">Refresh Expirado</div>
+                <div class="step-desc">
+                  Se o refresh também falhar, forçar novo login do utilizador.
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">6</div>
+              <div class="step-content">
+                <div class="step-title">Logout</div>
+                <div class="step-desc">
+                  <code>POST /logout</code> com o
+                  <code>refresh_token</code> para revogar a sessão no servidor.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 9. RESUMO ─────────────────────────────────────────── -->
+        <div class="section" id="resumo">
+          <div class="section-header">
+            <span class="section-num">09</span>
+            <h2>Todos os Endpoints</h2>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Método</th>
+                  <th>Endpoint</th>
+                  <th>Função</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code>/realms/{r}/protocol/openid-connect/token</code>
+                  </td>
+                  <td>Login (grant_type=password)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code>/realms/{r}/protocol/openid-connect/token</code>
+                  </td>
+                  <td>Refresh token</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code
+                      >/realms/{r}/protocol/openid-connect/token/introspect</code
+                    >
+                  </td>
+                  <td>Verificar/validar token</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code>/realms/{r}/protocol/openid-connect/logout</code>
+                  </td>
+                  <td>Logout e revogar token</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/users</code></td>
+                  <td>Criar utilizador</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-blue" style="font-size: 10px"
+                      >GET</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/users</code></td>
+                  <td>Listar utilizadores</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-blue" style="font-size: 10px"
+                      >GET</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/users/{id}</code></td>
+                  <td>Buscar por ID</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-yellow" style="font-size: 10px"
+                      >PUT</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/users/{id}</code></td>
+                  <td>Atualizar utilizador</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-yellow" style="font-size: 10px"
+                      >PUT</span
+                    >
+                  </td>
+                  <td>
+                    <code>/admin/realms/{r}/users/{id}/reset-password</code>
+                  </td>
+                  <td>Alterar password</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code
+                      >/admin/realms/{r}/users/{id}/role-mappings/realm</code
+                    >
+                  </td>
+                  <td>Atribuir role a utilizador</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span
+                      style="
+                        font-size: 10px;
+                        background: rgba(248, 113, 113, 0.15);
+                        color: #f87171;
+                        border: 1px solid rgba(248, 113, 113, 0.25);
+                        padding: 2px 8px;
+                        border-radius: 3px;
+                        font-family: var(--font-mono);
+                        font-weight: 600;
+                      "
+                      >DEL</span
+                    >
+                  </td>
+                  <td>
+                    <code
+                      >/admin/realms/{r}/users/{id}/role-mappings/realm</code
+                    >
+                  </td>
+                  <td>Remover role de utilizador</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/groups</code></td>
+                  <td>Criar grupo</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-blue" style="font-size: 10px"
+                      >GET</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/groups</code></td>
+                  <td>Listar grupos</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-yellow" style="font-size: 10px"
+                      >PUT</span
+                    >
+                  </td>
+                  <td>
+                    <code>/admin/realms/{r}/users/{id}/groups/{gid}</code>
+                  </td>
+                  <td>Adicionar utilizador a grupo</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span
+                      style="
+                        font-size: 10px;
+                        background: rgba(248, 113, 113, 0.15);
+                        color: #f87171;
+                        border: 1px solid rgba(248, 113, 113, 0.25);
+                        padding: 2px 8px;
+                        border-radius: 3px;
+                        font-family: var(--font-mono);
+                        font-weight: 600;
+                      "
+                      >DEL</span
+                    >
+                  </td>
+                  <td>
+                    <code>/admin/realms/{r}/users/{id}/groups/{gid}</code>
+                  </td>
+                  <td>Remover utilizador de grupo</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-green" style="font-size: 10px"
+                      >POST</span
+                    >
+                  </td>
+                  <td>
+                    <code
+                      >/admin/realms/{r}/groups/{gid}/role-mappings/realm</code
+                    >
+                  </td>
+                  <td>Atribuir role a grupo</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="tag tag-blue" style="font-size: 10px"
+                      >GET</span
+                    >
+                  </td>
+                  <td><code>/admin/realms/{r}/roles</code></td>
+                  <td>Listar todas as roles</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- ─── 10. TROUBLESHOOTING ───────────────────────────────── -->
+        <div class="section" id="troubleshoot">
+          <div class="section-header">
+            <span class="section-num">10</span>
+            <h2>Resolução de Problemas</h2>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Problema</th>
+                  <th>Solução</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>401 no login</td>
+                  <td>
+                    Verificar username/password. Confirmar que o utilizador está
+                    <strong>enabled</strong> no Keycloak.
+                  </td>
+                </tr>
+                <tr>
+                  <td>invalid_client</td>
+                  <td>
+                    Client secret incorrecto. Ir a Clients → Credentials →
+                    regenerar secret.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Token expirado (active: false)</td>
+                  <td>
+                    Usar o refresh_token para obter novo access_token. Se
+                    falhar, fazer novo login.
+                  </td>
+                </tr>
+                <tr>
+                  <td>CORS error no browser</td>
+                  <td>
+                    Configurar Web Origins: Clients → seu-client → Access
+                    Settings → Web Origins: <code>*</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Connection refused</td>
+                  <td>
+                    Verificar se o Keycloak está a correr:
+                    <code>docker ps</code> ou
+                    <code>netstat -tlnp | grep 8080</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Realm não encontrado</td>
+                  <td>
+                    O nome do realm é <strong>case-sensitive</strong>. Confirmar
+                    na interface admin.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Admin API 403 Forbidden</td>
+                  <td>
+                    Token admin expirado. Autenticar novamente no realm
+                    <code>master</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Grant type not allowed</td>
+                  <td>
+                    Activar "Direct Access Grants" no client: Clients →
+                    seu-client → Settings.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>Comandos de Diagnóstico</h4>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-lang">bash</span
+              ><button class="copy-btn" onclick="copyCode(this)">copiar</button>
+            </div>
+            <pre><code><span class="c-comment"># Verificar se o container está a correr</span>
+docker ps | grep keycloak
+
+<span class="c-comment"># Ver logs recentes</span>
+docker logs keycloak --tail 50
+
+<span class="c-comment"># Testar conectividade</span>
+curl http://localhost:8080/realms/master
+
+<span class="c-comment"># Verificar porta em uso</span>
+ss -tlnp | grep 8080</code></pre>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+          <p>Keycloak 25.0 · Guia de Integração · Março 2025</p>
+          <p>OpenID Connect · OAuth 2.0 · JWT</p>
+        </div>
+      </div>
+      <!-- /content -->
+    </main>
+
+    <script>
+      // ── COPY BUTTON ──────────────────────────────────────────────────────────
+      function copyCode(btn) {
+        const pre = btn.closest(".code-wrap").querySelector("pre");
+        const text = pre.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = "copiado!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "copiar";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      // ── MOBILE SIDEBAR ───────────────────────────────────────────────────────
+      function toggleSidebar() {
+        const s = document.getElementById("sidebar");
+        const o = document.getElementById("overlay");
+        s.classList.toggle("open");
+        o.classList.toggle("open");
+      }
+
+      // ── ACTIVE NAV ON SCROLL ─────────────────────────────────────────────────
+      const navItems = document.querySelectorAll('.nav-item[href^="#"]');
+      const sections = [];
+
+      navItems.forEach((item) => {
+        const id = item.getAttribute("href").slice(1);
+        const el = document.getElementById(id);
+        if (el) sections.push({ id, el, item });
+      });
+
+      function updateActiveNav() {
+        const scrollY = window.scrollY + 80;
+        let current = sections[0];
+        sections.forEach((s) => {
+          if (s.el.offsetTop <= scrollY) current = s;
+        });
+        navItems.forEach((n) => n.classList.remove("active"));
+        if (current) current.item.classList.add("active");
+      }
+
+      window.addEventListener("scroll", updateActiveNav, { passive: true });
+
+      // ── SEARCH ───────────────────────────────────────────────────────────────
+      function handleSearch(val) {
+        const query = val.trim().toLowerCase();
+        navItems.forEach((item) => {
+          if (!query) {
+            item.style.display = "";
+            return;
+          }
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(query) ? "" : "none";
+        });
+        // Also highlight nav section labels
+        document.querySelectorAll(".nav-section-label").forEach((label) => {
+          label.style.display = query ? "none" : "";
+        });
+      }
+    </script>
+  </body>
+</html>
